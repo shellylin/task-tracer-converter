@@ -2,7 +2,7 @@
     {
         "processId": 2688, 
         "mem_offset": 1077936128, 
-        "processName": "(Preallocated app)"
+        "processName": "Built-in Keyboard"
     }, 
     {
         "processId": 2633, 
@@ -12,7 +12,7 @@
     {
         "processId": 2700, 
         "mem_offset": 1077936128, 
-        "processName": "(Preallocated app)"
+        "processName": "Communications"
     }, 
     {
         "processId": 2609, 
@@ -27,7 +27,7 @@
     {
         "processId": 2718, 
         "mem_offset": 1077936128, 
-        "processName": "(Preallocated app)"
+        "processName": "Settings"
     }
 ], "threads": [
     {

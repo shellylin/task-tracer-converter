@@ -8,6 +8,12 @@ import json
 from sets import Set
 import sqlite3
 
+
+data = {}
+show_warnings = False
+processes = {}
+threads = {}
+
 class Label(object):
   def __init__(self, timestamp, label):
     super(Label, self).__init__()
@@ -194,11 +200,17 @@ def set_task_info(info):
     data[task_id].processId = process_id
     if process_id not in processes:
       processes[process_id] = Process(process_id, info[4])
+    elif all((info[4] != processes[process_id].processName,
+              info[4] != "(Nuwa)",
+              info[4] != "(Preallocated app)")):
+      processes[process_id].processName = info[4]
 
     thread_id = int(info[5])
     data[task_id].threadId = thread_id
     if thread_id not in threads:
       threads[thread_id] = Thread(thread_id, info[6])
+    else:
+      threads[thread_id].threadName = info[6]
   elif log_type == 2:
     data[task_id].end = timestamp
   elif log_type == 3:
@@ -417,10 +429,10 @@ def binary_search(address, x, lo=0, hi=None):
   return -1
 
 def retrieve_symbol():
-  with open('mmap', 'r') as mmaps_file:
-    all_mmaps = mmaps_file.readlines()
+  with open('mem_offset', 'r') as mmaps_file:
+    all_mem_offset = mmaps_file.readlines()
 
-  for line in all_mmaps:
+  for line in all_mem_offset:
     tokens = find_char_and_split(line)
     if not tokens: return
     [process_id, mem_offset] = tokens
@@ -428,7 +440,6 @@ def retrieve_symbol():
     mem_offset = int(tokens[1].strip(), 16)
 
     if process_id not in processes:
-      print 'no', process_id
       continue
 
     processes[process_id].mem_offset = mem_offset
@@ -479,11 +490,6 @@ def main(argv=sys.argv[:]):
   print len(data), 'tasks has been written to JSON output successfully.'
   if args.print_all_tasks:
     print_all_tasks()
-
-data = {}
-show_warnings = False
-processes = {}
-threads = {}
 
 if __name__ == '__main__':
   sys.exit(main())
