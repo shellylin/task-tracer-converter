@@ -19,6 +19,10 @@ class Process(object):
     super(Process, self).__init__()
     self.processId = process_id
     self.processName = process_name
+    self.mem_offset = None
+  
+  def set_mem_offset(self, offset):
+    self.mem_offset = offset
 
 class Thread(object):
   def __init__(self, thread_id, thread_name):
@@ -38,13 +42,14 @@ class Task(object):
     self.processId = None
     self.threadId = None
     self.parentTaskId = None
+    self.labels = []
+    self.vtable = None
+    self.name = None
 
     # Timestamp information
     self.dispatch = 0
     self.begin = 0
     self.end = 0
-
-    self.labels = []
 
   def add_label(self, timestamp, label):
     label = Label(timestamp, label)
@@ -163,13 +168,6 @@ def set_task_info(info):
   """
   log_type = int(info[0])
 
-  # TODO
-  if log_type == 4:
-    if show_warnings:
-      print ('Skip since the feature haven\'t completed yet. \'' +
-             line.strip() + '\'');
-    return
-
   task_id = info[1]
   if task_id not in data:
     if log_type == 0:
@@ -178,6 +176,10 @@ def set_task_info(info):
       if show_warnings:
         print 'Skip because of incomplete logs. \'', line.strip(), '\''
       return
+
+  if log_type == 4:
+    data[task_id].vtable = int(info[2], 16)
+    return
 
   timestamp = int(info[2])
   if log_type == 0:
@@ -398,6 +400,61 @@ def print_all_tasks():
            'end: {}, '.format(task_obj.end) +
            'labels: {}'.format(labels_str))
 
+def binary_search(address, x, lo=0, hi=None):
+  if hi is None:
+    hi = len(address)
+    while lo < hi:
+      if (hi - lo == 1):
+        return address[lo][1]
+      mid = (lo+hi)//2
+      midval = address[mid][0]
+      if midval < x:
+        lo = mid+1
+      elif midval > x: 
+        hi = mid
+      else:
+        return mid
+  return -1
+
+def retrieve_symbol():
+  with open('mmaps', 'r') as mmaps_file:
+    all_mmaps = mmaps_file.readlines()
+
+  for line in all_mmaps:
+    tokens = find_char_and_split(line)
+    if not tokens: return
+    [process_id, mem_offset] = tokens
+    process_id = int(tokens[0].strip())
+    mem_offset = int(tokens[1].strip(), 16)
+
+    if process_id not in processes:
+      print 'no', process_id
+      continue
+
+    processes[process_id].mem_offset = mem_offset
+
+  with open('symbol', 'r') as symbol_file:
+    all_symbols = symbol_file.readlines()
+
+  address = []
+  for line in all_symbols:
+    tokens = find_char_and_split(line, ' ', 4)
+    if not tokens: continue
+    elif len(tokens[0]) == 0: continue
+
+    address.append((int(tokens[0], 16), tokens[4].strip()))
+
+  for task_id, task_obj in data.iteritems():
+    if not task_obj.vtable:
+      continue
+    if not task_obj.processId:
+      continue
+    if not processes[task_obj.processId].mem_offset:
+      continue
+    offset = task_obj.vtable - processes[task_obj.processId].mem_offset
+    result = binary_search(address, offset)
+    task_obj.name = result
+
 def main(argv=sys.argv[:]):
   args = get_arguments(argv)
 
@@ -408,6 +465,8 @@ def main(argv=sys.argv[:]):
   if parse_log(args.input_file) is False:
     sys.exit()
   print len(data), 'tasks has been created successfully.'
+
+  retrieve_symbol();
 
   if args.check_parent_task_id:
     check_parent_task_id()
