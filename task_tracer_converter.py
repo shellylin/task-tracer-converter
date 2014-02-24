@@ -417,7 +417,7 @@ def binary_search(address, x, lo=0, hi=None):
   return -1
 
 def retrieve_symbol():
-  with open('mmaps', 'r') as mmaps_file:
+  with open('mmap', 'r') as mmaps_file:
     all_mmaps = mmaps_file.readlines()
 
   for line in all_mmaps:
