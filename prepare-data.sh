@@ -10,9 +10,9 @@ if [ "$1" == "" ]; then
 	exit
 fi
 
-if [ $(find . -name mmap) ]; then
+if [ $(find . -name mem_offset) ]; then
   echo "  Remove old intermediate file."
-  rm mmap
+  rm $DEFAULT_MMAP_FILE
 fi
 
 for file in $1/mmaps_*; do
