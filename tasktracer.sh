@@ -61,6 +61,7 @@ cmd_get_mmaps() {
     fi
   done))
 
+  adb root
   for pid in ${B2G_PIDS[*]}; do
     filename="./mmaps/mmaps_"${pid}
     adb shell cat /proc/${pid}/maps > $filename
